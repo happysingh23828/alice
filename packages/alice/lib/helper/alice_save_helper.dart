@@ -1,12 +1,18 @@
-import 'dart:async';
-import 'dart:convert';
-import 'dart:io';
+// ignore_for_file: use_build_context_synchronously
+
+import 'dart:convert' show JsonEncoder;
+import 'dart:io' show Directory, File, FileMode, IOSink, Platform;
 
 import 'package:alice/core/alice_utils.dart';
-import 'package:alice/helper/alice_alert_helper.dart';
 import 'package:alice/helper/alice_conversion_helper.dart';
+import 'package:alice/helper/operating_system.dart';
 import 'package:alice/model/alice_http_call.dart';
+import 'package:alice/model/alice_translation.dart';
+import 'package:alice/ui/common/alice_context_ext.dart';
+import 'package:alice/ui/common/alice_dialog.dart';
 import 'package:alice/utils/alice_parser.dart';
+import 'package:alice/utils/curl.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -44,18 +50,26 @@ class AliceSaveHelper {
     BuildContext context,
     List<AliceHttpCall> calls,
   ) async {
-    if (await _getPermissionStatus()) {
+    final bool permissionStatus = await _getPermissionStatus();
+
+    if (!context.mounted) return;
+
+    if (permissionStatus) {
       await _saveToFile(context, calls);
     } else {
-      final status = await _requestPermission();
+      final bool status = await _requestPermission();
+
+      if (!context.mounted) return;
 
       if (status) {
         await _saveToFile(context, calls);
       } else {
-        AliceAlertHelper.showAlert(
-          context,
-          'Permission error',
-          "Permission not granted. Couldn't save logs.",
+        AliceGeneralDialog.show(
+          context: context,
+          title:
+              context.i18n(AliceTranslationKey.saveDialogPermissionErrorTitle),
+          description: context
+              .i18n(AliceTranslationKey.saveDialogPermissionErrorDescription),
         );
       }
     }
@@ -67,159 +81,167 @@ class AliceSaveHelper {
   ) async {
     try {
       if (calls.isEmpty) {
-        AliceAlertHelper.showAlert(
-          context,
-          'Error',
-          'There are no logs to save',
+        AliceGeneralDialog.show(
+          context: context,
+          title: context.i18n(AliceTranslationKey.saveDialogEmptyErrorTitle),
+          description:
+              context.i18n(AliceTranslationKey.saveDialogEmptyErrorDescription),
         );
         return '';
       }
-      final isAndroid = Platform.isAndroid;
-      final isIOS = Platform.isIOS;
 
-      Directory? externalDir;
-      if (isAndroid) {
-        externalDir = await getExternalStorageDirectory();
-      } else if (isIOS) {
-        externalDir = await getApplicationDocumentsDirectory();
-      } else {
-        externalDir = await getApplicationCacheDirectory();
-      }
+      final Directory? externalDir = switch (Platform.operatingSystem) {
+        OperatingSystem.android => await getExternalStorageDirectory(),
+        OperatingSystem.ios => await getApplicationDocumentsDirectory(),
+        _ => await getApplicationCacheDirectory(),
+      };
+
       if (externalDir != null) {
-        final fileName =
+        final String fileName =
             'alice_log_${DateTime.now().millisecondsSinceEpoch}.txt';
-        final file = File('${externalDir.path}/$fileName')..createSync();
-        final sink = file.openWrite(mode: FileMode.append)
-          ..write(await _buildAliceLog());
-        calls.forEach((AliceHttpCall call) {
-          sink.write(_buildCallLog(call));
-        });
+        final File file = File('${externalDir.path}/$fileName')..createSync();
+        final IOSink sink = file.openWrite(mode: FileMode.append)
+          ..write(await _buildAliceLog(context: context));
+        for (final AliceHttpCall call in calls) {
+          sink.write(_buildCallLog(context: context, call: call));
+        }
         await sink.flush();
         await sink.close();
-        AliceAlertHelper.showAlert(
-          context,
-          'Success',
-          'Successfully saved logs in ${file.path}',
-          secondButtonTitle: isAndroid ? 'View file' : null,
-          secondButtonAction: () =>
-              isAndroid ? OpenFilex.open(file.path) : null,
-        );
+
+        if (context.mounted) {
+          AliceGeneralDialog.show(
+            context: context,
+            title: context.i18n(AliceTranslationKey.saveSuccessTitle),
+            description: context
+                .i18n(AliceTranslationKey.saveSuccessDescription)
+                .replaceAll("[path]", file.path),
+            secondButtonTitle: Platform.isAndroid
+                ? context.i18n(AliceTranslationKey.saveSuccessView)
+                : null,
+            secondButtonAction: () =>
+                Platform.isAndroid ? OpenFilex.open(file.path) : null,
+          );
+        }
+
         return file.path;
       } else {
-        AliceAlertHelper.showAlert(
-          context,
-          'Error',
-          'Failed to save http calls to file',
-        );
+        if (context.mounted) {
+          AliceGeneralDialog.show(
+            context: context,
+            title:
+                context.i18n(AliceTranslationKey.saveDialogFileSaveErrorTitle),
+            description: context
+                .i18n(AliceTranslationKey.saveDialogFileSaveErrorDescription),
+          );
+        }
       }
     } catch (exception) {
-      AliceAlertHelper.showAlert(
-        context,
-        'Error',
-        'Failed to save http calls to file',
-      );
-      AliceUtils.log(exception.toString());
+      if (context.mounted) {
+        AliceGeneralDialog.show(
+          context: context,
+          title: context.i18n(AliceTranslationKey.saveDialogFileSaveErrorTitle),
+          description: context
+              .i18n(AliceTranslationKey.saveDialogFileSaveErrorDescription),
+        );
+        AliceUtils.log(exception.toString());
+      }
     }
 
     return '';
   }
 
-  static Future<String> _buildAliceLog() async {
-    final stringBuffer = StringBuffer();
-    final packageInfo = await PackageInfo.fromPlatform();
-    stringBuffer
-      ..write('Alice - HTTP Inspector\n')
-      ..write('App name:  ${packageInfo.appName}\n')
-      ..write('Package: ${packageInfo.packageName}\n')
-      ..write('Version: ${packageInfo.version}\n')
-      ..write('Build number: ${packageInfo.buildNumber}\n')
-      ..write('Generated: ${DateTime.now().toIso8601String()}\n')
-      ..write('\n');
-    return stringBuffer.toString();
+  static Future<String> _buildAliceLog({required BuildContext context}) async {
+    final PackageInfo packageInfo = await PackageInfo.fromPlatform();
+
+    return '${context.i18n(AliceTranslationKey.saveHeaderTitle)}\n'
+        '${context.i18n(AliceTranslationKey.saveHeaderAppName)}  ${packageInfo.appName}\n'
+        '${context.i18n(AliceTranslationKey.saveHeaderPackage)} ${packageInfo.packageName}\n'
+        '${context.i18n(AliceTranslationKey.saveHeaderTitle)} ${packageInfo.version}\n'
+        '${context.i18n(AliceTranslationKey.saveHeaderBuildNumber)} ${packageInfo.buildNumber}\n'
+        '${context.i18n(AliceTranslationKey.saveHeaderGenerated)} ${DateTime.now().toIso8601String()}\n'
+        '\n';
   }
 
-  static String _buildCallLog(AliceHttpCall call) {
-    final stringBuffer = StringBuffer()
-      ..write('===========================================\n')
-      ..write('Id: ${call.id}\n')
-      ..write('============================================\n')
-      ..write('--------------------------------------------\n')
-      ..write('General data\n')
-      ..write('--------------------------------------------\n')
-      ..write('Server: ${call.server} \n')
-      ..write('Method: ${call.method} \n')
-      ..write('Endpoint: ${call.endpoint} \n')
-      ..write('Client: ${call.client} \n')
-      ..write('Duration ${AliceConversionHelper.formatTime(call.duration)}\n')
-      ..write('Secured connection: ${call.secure}\n')
-      ..write('Completed: ${!call.loading} \n')
-      ..write('--------------------------------------------\n')
-      ..write('Request\n')
-      ..write('--------------------------------------------\n')
-      ..write('Request time: ${call.request!.time}\n')
-      ..write('Request content type: ${call.request!.contentType}\n')
-      ..write('Request cookies: ${_encoder.convert(call.request!.cookies)}\n')
-      ..write('Request headers: ${_encoder.convert(call.request!.headers)}\n');
-    if (call.request!.queryParameters.isNotEmpty) {
+  static String _buildCallLog(
+      {required BuildContext context, required AliceHttpCall call}) {
+    final StringBuffer stringBuffer = StringBuffer()
+      ..writeAll([
+        '===========================================\n',
+        '${context.i18n(AliceTranslationKey.saveLogId)} ${call.id}\n',
+        '============================================\n',
+        '--------------------------------------------\n',
+        '${context.i18n(AliceTranslationKey.saveLogGeneralData)}\n',
+        '--------------------------------------------\n',
+        '${context.i18n(AliceTranslationKey.saveLogServer)} ${call.server} \n',
+        '${context.i18n(AliceTranslationKey.saveLogMethod)} ${call.method} \n',
+        '${context.i18n(AliceTranslationKey.saveLogEndpoint)} ${call.endpoint} \n',
+        '${context.i18n(AliceTranslationKey.saveLogClient)} ${call.client} \n',
+        '${context.i18n(AliceTranslationKey.saveLogDuration)} ${AliceConversionHelper.formatTime(call.duration)}\n',
+        '${context.i18n(AliceTranslationKey.saveLogSecured)} ${call.secure}\n',
+        '${context.i18n(AliceTranslationKey.saveLogCompleted)}: ${!call.loading} \n',
+        '--------------------------------------------\n',
+        '${context.i18n(AliceTranslationKey.saveLogRequest)}\n',
+        '--------------------------------------------\n',
+        '${context.i18n(AliceTranslationKey.saveLogRequestTime)} ${call.request?.time}\n',
+        '${context.i18n(AliceTranslationKey.saveLogRequestContentType)}: ${call.request?.contentType}\n',
+        '${context.i18n(AliceTranslationKey.saveLogRequestCookies)} ${_encoder.convert(call.request?.cookies)}\n',
+        '${context.i18n(AliceTranslationKey.saveLogRequestHeaders)} ${_encoder.convert(call.request?.headers)}\n',
+      ]);
+
+    if (call.request?.queryParameters.isNotEmpty ?? false) {
       stringBuffer.write(
-        'Request query params: '
-        '${_encoder.convert(call.request!.queryParameters)}\n',
+        '${context.i18n(AliceTranslationKey.saveLogRequestQueryParams)} ${_encoder.convert(call.request?.queryParameters)}\n',
       );
     }
-    stringBuffer
-      ..write(
-        'Request size: '
-        '${AliceConversionHelper.formatBytes(call.request!.size)}\n',
-      )
-      ..write(
-        'Request body: ${AliceParser.formatBody(
-          call.request!.body,
-          AliceParser.getContentType(call.request!.headers),
-        )}\n',
-      )
-      ..write('--------------------------------------------\n')
-      ..write('Response\n')
-      ..write('--------------------------------------------\n')
-      ..write('Response time: ${call.response!.time}\n')
-      ..write('Response status: ${call.response!.status}\n')
-      ..write(
-        'Response size: '
-        '${AliceConversionHelper.formatBytes(call.response!.size)}\n',
-      )
-      ..write(
-        'Response headers: ${_encoder.convert(call.response!.headers)}\n',
-      )
-      ..write(
-        'Response body: ${AliceParser.formatBody(
-          call.response!.body,
-          AliceParser.getContentType(call.response!.headers),
-        )}\n',
-      );
+
+    stringBuffer.writeAll([
+      '${context.i18n(AliceTranslationKey.saveLogRequestSize)} ${AliceConversionHelper.formatBytes(call.request?.size ?? 0)}\n',
+      '${context.i18n(AliceTranslationKey.saveLogRequestBody)} ${AliceBodyParser.formatBody(context: context, body: call.request?.body, contentType: call.request?.contentType)}\n',
+      '--------------------------------------------\n',
+      '${context.i18n(AliceTranslationKey.saveLogResponse)}\n',
+      '--------------------------------------------\n',
+      '${context.i18n(AliceTranslationKey.saveLogResponseTime)} ${call.response?.time}\n',
+      '${context.i18n(AliceTranslationKey.saveLogResponseStatus)} ${call.response?.status}\n',
+      '${context.i18n(AliceTranslationKey.saveLogResponseSize)} ${AliceConversionHelper.formatBytes(call.response?.size ?? 0)}\n',
+      '${context.i18n(AliceTranslationKey.saveLogResponseHeaders)} ${_encoder.convert(call.response?.headers)}\n',
+      '${context.i18n(AliceTranslationKey.saveLogResponseBody)} ${AliceBodyParser.formatBody(context: context, body: call.response?.body, contentType: AliceBodyParser.getContentType(context: context, headers: call.response?.headers))}\n',
+    ]);
+
     if (call.error != null) {
-      stringBuffer
-        ..write('--------------------------------------------\n')
-        ..write('Error\n')
-        ..write('--------------------------------------------\n')
-        ..write('Error: ${call.error!.error}\n');
-      if (call.error!.stackTrace != null) {
-        stringBuffer.write('Error stacktrace: ${call.error!.stackTrace}\n');
+      stringBuffer.writeAll([
+        '--------------------------------------------\n',
+        '${context.i18n(AliceTranslationKey.saveLogError)}\n',
+        '--------------------------------------------\n',
+        '${context.i18n(AliceTranslationKey.saveLogError)}: ${call.error?.error}\n',
+      ]);
+
+      if (call.error?.stackTrace != null) {
+        stringBuffer.write(
+            '${context.i18n(AliceTranslationKey.saveLogStackTrace)}: ${call.error?.stackTrace}\n');
       }
     }
-    stringBuffer
-      ..write('--------------------------------------------\n')
-      ..write('Curl\n')
-      ..write('--------------------------------------------\n')
-      ..write(call.getCurlCommand())
-      ..write('\n')
-      ..write('==============================================\n')
-      ..write('\n');
+
+    stringBuffer.writeAll([
+      '--------------------------------------------\n',
+      '${context.i18n(AliceTranslationKey.saveLogCurl)}\n',
+      '--------------------------------------------\n',
+      getCurlCommand(call),
+      '\n',
+      '==============================================\n',
+      '\n',
+    ]);
 
     return stringBuffer.toString();
   }
 
-  static Future<String> buildCallLog(AliceHttpCall call) async {
+  static Future<String> buildCallLog(
+      {required BuildContext context, required AliceHttpCall call}) async {
     try {
-      return await _buildAliceLog() + _buildCallLog(call);
+      return await _buildAliceLog(context: context) +
+          _buildCallLog(
+            call: call,
+            context: context,
+          );
     } catch (exception) {
       return 'Failed to generate call log';
     }

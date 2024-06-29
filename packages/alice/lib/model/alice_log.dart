@@ -1,7 +1,9 @@
+import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 
+/// Definition of log data holder.
 @immutable
-class AliceLog {
+class AliceLog with EquatableMixin {
   AliceLog({
     required this.message,
     this.level = DiagnosticLevel.info,
@@ -22,15 +24,11 @@ class AliceLog {
   final StackTrace? stackTrace;
 
   @override
-  int get hashCode => Object.hash(level, timestamp, message, error, stackTrace);
-
-  @override
-  bool operator ==(Object other) {
-    return other is AliceLog &&
-        level == other.level &&
-        timestamp == other.timestamp &&
-        message == other.message &&
-        error == other.error &&
-        stackTrace == other.stackTrace;
-  }
+  List<Object?> get props => [
+        level,
+        timestamp,
+        message,
+        error,
+        stackTrace,
+      ];
 }

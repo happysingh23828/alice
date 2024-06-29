@@ -1,12 +1,14 @@
-import 'dart:io';
+import 'dart:io' show Platform, Process, ProcessResult;
 
 import 'package:alice/model/alice_log.dart';
+import 'package:alice/utils/num_comparison.dart';
 import 'package:flutter/foundation.dart';
 
+/// Logger used to handle logs from application.
 class AliceLogger {
   AliceLogger({int? maximumSize = 1000}) : _maximumSize = maximumSize;
 
-  final _logs = ValueNotifier<List<AliceLog>>([]);
+  final ValueNotifier<List<AliceLog>> _logs = ValueNotifier<List<AliceLog>>([]);
 
   ValueListenable<List<AliceLog>> get listenable => _logs;
 
@@ -29,17 +31,17 @@ class AliceLogger {
   }
 
   void add(AliceLog log) {
-    int index;
+    late final int index;
     if (logs.isEmpty || !log.timestamp.isBefore(logs.last.timestamp)) {
       // Quick path as new logs are usually more recent.
       index = logs.length;
     } else {
       // Binary search to find the insertion index.
-      var min = 0;
-      var max = logs.length;
+      int min = 0;
+      int max = logs.length;
       while (min < max) {
-        final mid = min + ((max - min) >> 1);
-        final item = logs[mid];
+        final int mid = min + ((max - min) >> 1);
+        final AliceLog item = logs[mid];
         if (log.timestamp.isBefore(item.timestamp)) {
           max = mid;
         } else {
@@ -50,36 +52,35 @@ class AliceLogger {
       index = min;
     }
 
-    var startIndex = 0;
-    if (maximumSize != null && logs.length >= maximumSize!) {
+    int startIndex = 0;
+    if (maximumSize != null && logs.length.gte(maximumSize)) {
       if (index == 0) return;
       startIndex = logs.length - maximumSize! + 1;
     }
-    _logs.value = [
+    _logs.value = <AliceLog>[
       ...logs.sublist(startIndex, index),
       log,
       ...logs.sublist(index, logs.length),
     ];
   }
 
-  void clear() => _logs.value = [];
+  /// Clears all logs.
+  void clearLogs() => _logs.value.clear();
 
+  /// Returns raw logs from Android via ADB.
   Future<String> getAndroidRawLogs() async {
     if (Platform.isAndroid) {
-      final process = await Process.run('logcat', ['-v', 'raw', '-d']);
-      final result = process.stdout as String;
-      return result;
+      final ProcessResult process =
+          await Process.run('logcat', ['-v', 'raw', '-d']);
+      return process.stdout as String;
     }
     return '';
   }
 
+  /// Clears all raw logs.
   Future<void> clearAndroidRawLogs() async {
     if (Platform.isAndroid) {
       await Process.run('logcat', ['-c']);
     }
-  }
-
-  void clearLogs() {
-    logs.clear();
   }
 }
