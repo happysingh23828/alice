@@ -1,3 +1,87 @@
+## 1.3.3
+
+* Updated alice dependency to ^1.11.0.
+
+## 1.3.2
+
+## 1.3.1
+
+* Updated alice dependency to ^1.9.0.
+
+## 1.3.0
+
+* Updated "alice" dependency to ^1.8.0.
+* Migrated to the new strict public API.
+
+## 1.2.5
+
+* Updated alice dependency to ^1.7.0.
+
+## 1.2.4
+
+* Updated `alice` dependency to `^1.6.0`.
+
+## 1.2.3
+
+* Updated `alice` dependency to `^1.5.0`.
+
+## 1.2.2
+
+* Updated `alice` dependency to `^1.4.0`.
+
+## 1.2.1
+
+* Updated `alice` dependency to `^1.3.0`.
+
+## 1.2.0
+
+* Updated package README with setup instructions and badges.
+* Updated dependencies.
+
+## 1.1.1
+
+* Updated dependencies.
+
+# 1.1.0
+
+* Updated dependencies.
+
+# 1.0.8
+
+* [BREAKING_CHANGE] Set minimal supported Flutter version 3.29 and Dart 3.7.
+* Updated dependencies.
+
+# 1.0.7
+
+* Updated dependencies.
+
+# 1.0.6
+
+* Added lint for trailing commas.
+* General refactor of code base.
+* Added support for form data.
+* Added tests.
+
+# 1.0.5
+
+* Untrack gitignored files.
+* Updated metadata.
+* Updated dependencies.
+
+# 1.0.4
+
+* Create error log on http exception (by Klemen Tusar https://github.com/techouse).
+* Fixed HTTP error status (by Klemen Tusar https://github.com/techouse).
+* Changed linter from very good analysis to flutter lints.
+* General code base refactor.
+
+# 1.0.3
+
+* Replaced milliseconds with UUID for alice token header (by Klemen
+  Tusar https://github.com/techouse).
+* Refactored obtaining the body size (by Klemen Tusar https://github.com/techouse).
+* Removed all unnecessary intermediary variables (by Klemen Tusar https://github.com/techouse).
+
 # 1.0.2
 
 * [BREAKING_CHANGE] Fixed file name of the adapter.

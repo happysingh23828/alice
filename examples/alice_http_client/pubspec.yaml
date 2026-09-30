@@ -1,23 +1,27 @@
-name: example
+name: alice_http_client_example
 description: "A project to showcase http client and Alice integration."
 publish_to: 'none'
+homepage: https://github.com/jhomlala/alice
+repository: https://github.com/jhomlala/alice
+issue_tracker: https://github.com/jhomlala/alice/issues
+resolution: workspace
 
-version: 1.0.0+1
+version: 1.0.0+3
 
 environment:
-  sdk: ^3.0.0
+  sdk: ">=3.13.0 <4.0.0"
 
 dependencies:
+  material_ui: ^1.2.0
   flutter:
     sdk: flutter
   alice:
+    workspace: true
   alice_http_client:
+    workspace: true
 
-dependency_overrides:
-  alice:
-    path: ../../packages/alice
-  alice_http_client:
-    path: ../../packages/alice_http_client
+dev_dependencies:
+  flutter_lints: ^6.0.0
 
 flutter:
   uses-material-design: true

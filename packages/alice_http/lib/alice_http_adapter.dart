@@ -1,14 +1,11 @@
 import 'dart:convert';
 
-import 'package:alice/core/alice_adapter.dart';
-import 'package:alice/model/alice_http_call.dart';
-import 'package:alice/model/alice_http_request.dart';
-import 'package:alice/model/alice_http_response.dart';
+import 'package:alice/alice.dart';
 import 'package:http/http.dart' as http;
 
 class AliceHttpAdapter with AliceAdapter {
   /// Handles http response. It creates both request and response from http call
-  void onResponse(http.Response response, {dynamic body}) {
+  void onResponse(http.Response response, {dynamic body, Duration? duration}) {
     if (response.request == null) {
       return;
     }
@@ -41,22 +38,45 @@ class AliceHttpAdapter with AliceAdapter {
       httpRequest
         ..body = body ?? (response.request! as http.Request).body ?? ''
         ..size = utf8.encode(httpRequest.body.toString()).length
-        ..headers = Map<String, dynamic>.from(response.request!.headers);
+        ..headers = Map<String, String>.from(response.request!.headers);
+    } else if (response.request is http.MultipartRequest) {
+      final multipartRequest = response.request! as http.MultipartRequest;
+      httpRequest.headers = Map<String, String>.from(multipartRequest.headers);
+      if (body != null) {
+        httpRequest.body = body;
+      } else {
+        httpRequest.body = {
+          'fields': multipartRequest.fields,
+          'files': multipartRequest.files
+              .map(
+                (file) => {
+                  'field': file.field,
+                  'filename': file.filename,
+                  'length': file.length,
+                  'contentType': file.contentType.toString(),
+                },
+              )
+              .toList(),
+        };
+      }
+      httpRequest.size = utf8.encode(httpRequest.body.toString()).length;
     } else if (body == null) {
       httpRequest
         ..size = 0
-        ..body = '';
+        ..body = ''
+        ..headers = Map<String, String>.from(response.request!.headers);
     } else {
       httpRequest
         ..size = utf8.encode(body.toString()).length
-        ..body = body;
+        ..body = body
+        ..headers = Map<String, String>.from(response.request!.headers);
     }
 
     httpRequest.time = DateTime.now();
 
     String? contentType = 'unknown';
     if (httpRequest.headers.containsKey('Content-Type')) {
-      contentType = httpRequest.headers['Content-Type'] as String?;
+      contentType = httpRequest.headers['Content-Type'];
     }
 
     httpRequest
@@ -79,8 +99,10 @@ class AliceHttpAdapter with AliceAdapter {
       ..request = httpRequest
       ..response = httpResponse
       ..loading = false
-      ..duration = httpResponse.time.millisecondsSinceEpoch -
-          httpRequest.time.millisecondsSinceEpoch;
+      ..duration =
+          duration?.inMilliseconds ??
+          (httpResponse.time.millisecondsSinceEpoch -
+              httpRequest.time.millisecondsSinceEpoch);
     aliceCore.addCall(call);
   }
 }

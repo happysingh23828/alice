@@ -4,33 +4,26 @@ import 'dart:io';
 import 'package:alice/alice.dart';
 import 'package:alice_http_client/alice_http_client_adapter.dart';
 import 'package:alice_http_client/alice_http_client_extensions.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
-void main() => runApp(MyApp());
+void main() => runApp(const MyApp());
 
 class MyApp extends StatefulWidget {
+  const MyApp({super.key});
+
   @override
-  _MyAppState createState() => _MyAppState();
+  State<MyApp> createState() => _MyAppState();
 }
 
 class _MyAppState extends State<MyApp> {
-  late Alice _alice;
-  late HttpClient _httpClient;
-  late AliceHttpClientAdapter _httpClientAdapter;
+  late final HttpClient _httpClient = HttpClient();
 
-  @override
-  void initState() {
-    _alice = Alice(
-      showNotification: true,
-      showInspectorOnShake: true,
-      maxCallsCount: 1000,
-    );
-    _httpClient = HttpClient();
-    _httpClientAdapter = AliceHttpClientAdapter();
-    _alice.addAdapter(_httpClientAdapter);
+  late final AliceHttpClientAdapter _httpClientAdapter =
+      AliceHttpClientAdapter();
 
-    super.initState();
-  }
+  final configuration = AliceConfiguration();
+  late final Alice _alice = Alice(configuration: configuration)
+    ..addAdapter(_httpClientAdapter);
 
   @override
   Widget build(BuildContext context) {
@@ -38,32 +31,30 @@ class _MyAppState extends State<MyApp> {
       navigatorKey: _alice.getNavigatorKey(),
       debugShowCheckedModeBanner: false,
       home: Scaffold(
-        appBar: AppBar(
-          title: const Text('Alice + HTTP Client - Example'),
-        ),
+        appBar: AppBar(title: const Text('Alice + HTTP Client - Example')),
         body: Container(
-          padding: EdgeInsets.all(16),
+          padding: const EdgeInsets.all(16),
           child: ListView(
             children: [
               const SizedBox(height: 8),
-              Text(
-                  'Welcome to example of Alice Http Inspector. Click buttons below to generate sample data.'),
+              const Text(
+                'Welcome to example of Alice Http Inspector.'
+                ' Click buttons below to generate sample data.',
+              ),
               ElevatedButton(
-                child: Text(
-                  'Run HttpClient Requests',
-                ),
                 onPressed: _runHttpHttpClientRequests,
+                child: const Text('Run HttpClient Requests'),
               ),
               const SizedBox(height: 8),
-              Text(
-                  'After clicking on buttons above, you should receive notification.'
-                  ' Click on it to show inspector. You can also shake your device or click button below.'),
+              const Text(
+                'After clicking on buttons above, you should receive'
+                ' notification. Click on it to show inspector. You can '
+                'also shake your device or click button below.',
+              ),
               ElevatedButton(
-                child: Text(
-                  'Run HTTP Inspector',
-                ),
                 onPressed: _runHttpInspector,
-              )
+                child: const Text('Run HTTP Inspector'),
+              ),
             ],
           ),
         ),
@@ -72,79 +63,127 @@ class _MyAppState extends State<MyApp> {
   }
 
   void _runHttpHttpClientRequests() {
-    Map<String, dynamic> body = <String, dynamic>{
+    final Map<String, dynamic> body = {
       'title': 'foo',
       'body': 'bar',
-      'userId': '1'
+      'userId': '1',
     };
+
+    _alice.tag(tag: 'test-flow');
     _httpClient
-        .getUrl(Uri.parse('https://jsonplaceholder.typicode.com/posts'))
+        .getUrl(Uri.https('jsonplaceholder.typicode.com', '/posts'))
         .interceptWithAlice(_httpClientAdapter);
+    _alice.clearTag();
 
     _httpClient
-        .postUrl(Uri.parse('https://jsonplaceholder.typicode.com/posts'))
-        .interceptWithAlice(_httpClientAdapter,
-            body: body, headers: <String, dynamic>{});
+        .postUrl(Uri.https('jsonplaceholder.typicode.com', '/posts'))
+        .interceptWithAlice(_httpClientAdapter, body: body, headers: {});
 
     _httpClient
-        .putUrl(Uri.parse('https://jsonplaceholder.typicode.com/posts/1'))
+        .putUrl(Uri.https('jsonplaceholder.typicode.com', '/posts/1'))
         .interceptWithAlice(_httpClientAdapter, body: body);
 
     _httpClient
-        .getUrl(Uri.parse('https://jsonplaceholder.typicode.com/test/test/'))
+        .getUrl(Uri.https('jsonplaceholder.typicode.com', '/test/test/'))
         .interceptWithAlice(_httpClientAdapter);
 
     _httpClient
-        .postUrl(Uri.parse('https://jsonplaceholder.typicode.com/posts'))
-        .then((request) async {
-      _httpClientAdapter.onRequest(request, body: body);
-      request.write(body);
-      var httpResponse = await request.close();
-      var responseBody = await utf8.decoder.bind(httpResponse).join();
-      _httpClientAdapter.onResponse(httpResponse, request, body: responseBody);
-    });
+        .postUrl(Uri.https('jsonplaceholder.typicode.com', '/posts'))
+        .then((HttpClientRequest request) async {
+          _httpClientAdapter.onRequest(request, body: body);
+
+          request.write(body);
+
+          final HttpClientResponse httpResponse = await request.close();
+
+          final String responseBody = await utf8.decoder
+              .bind(httpResponse)
+              .join();
+
+          _httpClientAdapter.onResponse(
+            httpResponse,
+            request,
+            body: responseBody,
+          );
+        });
 
     _httpClient
-        .putUrl(Uri.parse('https://jsonplaceholder.typicode.com/posts/1'))
-        .then((request) async {
-      _httpClientAdapter.onRequest(request, body: body);
-      request.write(body);
-      var httpResponse = await request.close();
-      var responseBody = await utf8.decoder.bind(httpResponse).join();
-      _httpClientAdapter.onResponse(httpResponse, request, body: responseBody);
-    });
+        .putUrl(Uri.https('jsonplaceholder.typicode.com', '/posts/1'))
+        .then((HttpClientRequest request) async {
+          _httpClientAdapter.onRequest(request, body: body);
+
+          request.write(body);
+
+          final HttpClientResponse httpResponse = await request.close();
+
+          final String responseBody = await utf8.decoder
+              .bind(httpResponse)
+              .join();
+
+          _httpClientAdapter.onResponse(
+            httpResponse,
+            request,
+            body: responseBody,
+          );
+        });
 
     _httpClient
-        .patchUrl(Uri.parse('https://jsonplaceholder.typicode.com/posts/1'))
-        .then((request) async {
-      _httpClientAdapter.onRequest(request, body: body);
-      request.write(body);
-      var httpResponse = await request.close();
-      var responseBody = await utf8.decoder.bind(httpResponse).join();
-      _httpClientAdapter.onResponse(httpResponse, request, body: responseBody);
-    });
+        .patchUrl(Uri.https('jsonplaceholder.typicode.com', '/posts/1'))
+        .then((HttpClientRequest request) async {
+          _httpClientAdapter.onRequest(request, body: body);
+
+          request.write(body);
+
+          final HttpClientResponse httpResponse = await request.close();
+          final String responseBody = await utf8.decoder
+              .bind(httpResponse)
+              .join();
+
+          _httpClientAdapter.onResponse(
+            httpResponse,
+            request,
+            body: responseBody,
+          );
+        });
 
     _httpClient
-        .deleteUrl(Uri.parse('https://jsonplaceholder.typicode.com/posts/1'))
-        .then((request) async {
-      _httpClientAdapter.onRequest(request);
-      var httpResponse = await request.close();
-      var responseBody = await utf8.decoder.bind(httpResponse).join();
-      _httpClientAdapter.onResponse(httpResponse, request, body: responseBody);
-    });
+        .deleteUrl(Uri.https('jsonplaceholder.typicode.com', '/posts/1'))
+        .then((HttpClientRequest request) async {
+          _httpClientAdapter.onRequest(request);
+
+          final HttpClientResponse httpResponse = await request.close();
+
+          final String responseBody = await utf8.decoder
+              .bind(httpResponse)
+              .join();
+
+          _httpClientAdapter.onResponse(
+            httpResponse,
+            request,
+            body: responseBody,
+          );
+        });
 
     _httpClient
-        .getUrl(Uri.parse('https://jsonplaceholder.typicode.com/test/test/'))
-        .then((request) async {
-      _httpClientAdapter.onRequest(request);
-      var httpResponse = await request.close();
-      var responseBody = await utf8.decoder.bind(httpResponse).join();
-      _httpClientAdapter.onResponse(httpResponse, request, body: responseBody);
-    });
+        .getUrl(Uri.https('jsonplaceholder.typicode.com', '/test/test/'))
+        .then((HttpClientRequest request) async {
+          _httpClientAdapter.onRequest(request);
+
+          final HttpClientResponse httpResponse = await request.close();
+
+          final String responseBody = await utf8.decoder
+              .bind(httpResponse)
+              .join();
+
+          _httpClientAdapter.onResponse(
+            httpResponse,
+            request,
+            body: responseBody,
+          );
+        });
   }
 
   void _runHttpInspector() {
     _alice.showInspector();
   }
 }
-

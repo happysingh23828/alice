@@ -1,3 +1,78 @@
+## 1.4.3
+
+* Updated alice dependency to ^1.11.0.
+
+## 1.4.2
+
+## 1.4.1
+
+* Updated alice dependency to ^1.9.0.
+
+## 1.4.0
+
+* Updated "alice" dependency to ^1.8.0.
+* Migrated to the new strict public API.
+
+## 1.3.3
+
+* Updated alice dependency to ^1.7.0.
+
+## 1.3.2
+
+* Updated `alice` dependency to `^1.6.0`.
+
+## 1.3.1
+
+* Updated `alice` dependency to `^1.5.0`.
+
+## 1.3.0
+
+* Fixed request duration calculation for `interceptWithAlice` extension.
+* Added support for intercepting `http.MultipartRequest`.
+* Added unit tests.
+* Updated `alice` dependency to `^1.4.0`.
+
+## 1.2.1
+
+* Updated `alice` dependency to `^1.3.0`.
+
+## 1.2.0
+
+* Updated package README with setup instructions and badges.
+* Updated dependencies.
+
+## 1.1.1
+
+* Updated dependencies.
+
+# 1.1.0
+
+* Updated dependencies.
+
+# 1.0.7
+
+* [BREAKING_CHANGE] Set minimal supported Flutter version 3.29 and Dart 3.7.
+* Updated dependencies.
+
+# 1.0.6
+
+* Updated dependencies.
+
+# 1.0.5
+
+* Added lint for trailing commas.
+* General refactor of code base.
+
+# 1.0.4
+
+* Untracked gitignored files.
+* Updated metadata.
+* Updated dependencies.
+
+# 1.0.3
+
+* Changed linter from very good analysis to flutter lints.
+
 # 1.0.2
 
 * Fixed Alice dependency path (by Klemen Tusar https://github.com/techouse).

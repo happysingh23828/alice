@@ -1,24 +1,180 @@
+## 1.11.0
+
+* Fixed `image/svg+xml` responses being routed to `Image.network()`, causing an `Invalid image data` crash in the inspector. SVGs are now displayed as a collapsible XML tree instead ([@PiotrRogulski](https://github.com/PiotrRogulski), [#329](https://github.com/jhomlala/alice/issues/329)).
+* Added `XmlViewer` widget: a collapsible tree viewer for XML response bodies (elements, attributes, text nodes), mirroring the existing `JsonViewer`.
+* Added `xml` package as a direct dependency (was already transitively included at 7.0.1).
+
+## 1.10.0
+
+* Added programmatic call tagging (e.g. `alice.tag(tag: 'login-flow')`) and UI tag indicators.
+* Added automatic N+1 duplicate request detection and UI duplicate badges.
+
+## 1.9.0
+
+* Fixed Flutter Web Wasm compatibility by isolating `flutter_local_notifications` behind conditional imports.
+* Added unit tests for `AliceNotificationService` stub implementation.
+* Fixed timeline issue.
+
+## 1.8.0
+
+* Enforced strict public API by moving internal logic to lib/src.
+* Renamed Utils to AliceUtils.
+
+## 1.7.1
+
+* Updated README with new screenshots and structure.
+
+## 1.7.0
+
+* Added an interactive Gantt chart Timeline tab to visually inspect staggered HTTP calls over time.
+* Added unit tests for the Timeline screen.
+* Restructured the project to adopt a cleaner architecture:
+    * Moved side-effect driven operations (logger, storage, notification, logcat) to `lib/services`.
+    * Moved platform abstractions (shake detector, package info) to `lib/services`.
+    * Extracted export-related logic (Text, HAR, Export Manager) to a dedicated `lib/export` directory.
+    * Moved pure functions and utilities to `lib/utils`.
+    * Cleaned up `lib/core` to strictly contain central orchestration and core configuration.
+    * Renamed all `Helper` classes (Permission, Replay, Share, Export, FileSave, Notification) to `Service` (or `Utils` where appropriate) for consistency.
+    * Migrated unit tests to match the new project structure.
+* Added Request Replay feature allowing developers to resend logged HTTP calls directly from the Alice call details view, with replay indication badges and interceptor bypass.
+* Revamped the Stats screen into a modern, actionable dashboard:
+    * Replaced the text-heavy list with a grid of high-level metrics (Total Calls, Avg Time, Data Transferred, Pending).
+    * Introduced visual Ratio Bars for Status Codes and HTTP Methods distribution.
+    * Added actionable insight lists for "Top 3 Slowest", "Recent Errors", and "Largest Payloads" with direct navigation to call details.
+    * Removed non-actionable metrics (Min Time, Secured vs Unsecured).
+
+## 1.6.0
+
+* Fixed Flutter Web WASM compatibility by isolating `share_plus` behind conditional imports.
+* Added clipboard fallback for sharing logs on Web platforms.
+* Added advanced search filters in inspector UI (e.g. `status:200`, `method:GET`, `host:google.com`, `client:dio`, `duration:100`).
+* Added search help dialog explaining advanced filter syntax.
+* Added unit tests for advanced search filters and translations.
+* Refactored search filter logic into a separate `AliceSearchFilter` class.
+* Added HAR (HTTP Archive 1.2) export support.
+* Refactored `AliceExportHelper` to support multiple export formats via `AliceExporter` interface.
+* Added `AliceExportFormatDialog` to allow users to choose between TXT and HAR export formats.
+* Added `AliceLoadingDialog` to show progress during export and share operations.
+
+## 1.5.0
+
+* Added comprehensive unit tests for `AliceCookie` and platform-specific logger behavior.
+* Removed dart:io dependencies to support Flutter Web.
+* Added interactive tree-based JSON viewer for request and response bodies.
+
+## 1.4.0
+
+* Fixed destructive mutation of HTTP calls list when searching in inspector UI (by @tiwariritesh1700).
+* Added `notificationLargeIcon` support to `AliceConfiguration` (by @husainazkas).
+* Added SelectionArea to Alice screens (by @JanArlukiewicz).
+* Hardcoded `presentBanner: false` for iOS notifications to prevent intrusive banners on every HTTP request.
+
+## 1.3.0
+
+* Added Retrofit support and example project.
+* Added GraphQL support and example project.
+* Migrated to `material_ui` package.
+* Migrated documentation to Docusaurus for better search and structure.
+
+## 1.2.0
+
+* Updated Excluded media directory from package publication.
+* Updated Replaced open_filex with open_file (^4.0.0) (by @kostadin-damyanov-prime).
+* Added support for share curl option (by @thanhnt-mdev).
+* Added sharePositionOrigin support for iOS (by @thanhnt-mdev).
+* Added FAB menu for share and share curl.
+* Added support for Linux, macOS, Windows, and Web.
+
+## 1.1.2
+
+* Updated dependencies.
+
+## 1.1.1
+
+* Updated dependencies.
+
+# 1.0.0
+
+* [BREAKING_CHANGE] Set minimal supported Flutter version 3.29 and Dart 3.7.
+* Updated dependencies.
+
+# 1.0.0-dev.12
+
+* Fixed build context issues (by Enguerrand ARMINJON https://github.com/EArminjon)
+* Fixed AliceCallsListPage String? unwrap.
+* Fixed Navigator issues (by Enguerrand ARMINJON https://github.com/EArminjon)
+* Fixed updates dependencies.
+
+# 1.0.0-dev.11
+
+* Fixed issue with invalid count of error calls in stats page.
+* Added lint for trailing commas.
+* General refactor of code base.
+
+# 1.0.0-dev.10
+
+* [BREAKING_CHANGE] Removed `maxCallsCount`. To change call count, use `storage` constructor
+  parameter
+  with call count.
+* [BREAKING_CHANGE] Replaced configuration parameter of Alice with `AliceConfiguration`.
+* Fixed issue with invalid count of calls in notification.
+* Added payload to notification.
+* General refactor of code base.
+* Updated documentation.
+
+# 1.0.0-dev.9
+
+* Fixed saving issue with Android 13 onwards.
+* Added unit tests.
+* Updated CI/CD task for tests.
+* General refactor of code base.
+* Updated metadata.
+
+# 1.0.0-dev.8
+
+* Added storage abstractions (by Klemen Tusar https://github.com/techouse).
+* Added in memory storage implementation (by Klemen Tusar https://github.com/techouse).
+* Added translations.
+
+# 1.0.0-dev.7
+
+* Refactored UI code.
+
+# 1.0.0-dev.6
+
+* [BREAKING_CHANGE] Bumped minimal Flutter version to 3.10.0.
+* Changed lint from very good analysis to flutter lints (by Klemen
+  Tusar https://github.com/techouse).
+* General refactor of code base (by Klemen Tusar https://github.com/techouse).
+* Added stacktrace to logs (by Klemen Tusar https://github.com/techouse).
+
 # 1.0.0-dev.5
+
 * Updated readme.
 * Updated examples configuration (by Klemen Tusar https://github.com/techouse).
 
 # 1.0.0-dev.4
+
 * Updated metadata.
 
 # 1.0.0-dev.3
+
 * Updated links.
 * Updated readme.
 
 # 1.0.0-dev.2
+
 * Updated links.
 * Updated readme.
 
 # 1.0.0-dev.1
-* [BREAKING_CHANGE] Extracted http clients interceptors to separate packages. See migration guide here.
-* [BREAKING_CHANGE] Removed methods: `getChopperInterceptor`, `onHttpResponse`, `onHttpClientResponse`, `getDioInterceptor` from `Alice` class.
+
+* [BREAKING_CHANGE] Extracted http clients interceptors to separate packages.
+* [BREAKING_CHANGE] Removed
+  methods: `getChopperInterceptor`, `onHttpResponse`, `onHttpClientResponse`, `getDioInterceptor`
+  from `Alice` class.
 * Updated example.
 * Updated dependencies.
-
 
 # 0.4.2
 

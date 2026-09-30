@@ -1,24 +1,30 @@
-name: example
+name: alice_dio_example
 description: "A project to showcase dio and alice integration."
 publish_to: 'none'
+homepage: https://github.com/jhomlala/alice
+repository: https://github.com/jhomlala/alice
+issue_tracker: https://github.com/jhomlala/alice/issues
+resolution: workspace
 
-version: 1.0.0+1
+version: 1.0.0+3
 
 environment:
-  sdk: ^3.0.0
+  sdk: ">=3.13.0 <4.0.0"
 
 dependencies:
+  material_ui: ^1.2.0
   flutter:
     sdk: flutter
   alice:
+    workspace: true
   alice_dio:
-  dio: ^5.4.3+1
+    workspace: true
+  path_provider:
+  path:
+  dio: ^5.8.0+1
 
-dependency_overrides:
-  alice:
-    path: ../../packages/alice
-  alice_dio:
-    path: ../../packages/alice_dio
+dev_dependencies:
+  flutter_lints: ^6.0.0
 
 flutter:
   uses-material-design: true

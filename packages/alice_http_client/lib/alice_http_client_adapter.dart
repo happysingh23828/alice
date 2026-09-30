@@ -1,10 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:alice/core/alice_adapter.dart';
-import 'package:alice/model/alice_http_call.dart';
-import 'package:alice/model/alice_http_request.dart';
-import 'package:alice/model/alice_http_response.dart';
+import 'package:alice/alice.dart';
 
 class AliceHttpClientAdapter with AliceAdapter {
   /// Handles httpClientRequest and creates http alice call from it
@@ -37,21 +34,23 @@ class AliceHttpClientAdapter with AliceAdapter {
         ..body = body;
     }
     httpRequest.time = DateTime.now();
-    final headers = <String, dynamic>{};
+    final headers = <String, String>{};
 
-    httpRequest.headers.forEach((header, dynamic value) {
-      headers[header] = value;
+    request.headers.forEach((header, values) {
+      headers[header] = values.toString();
     });
 
-    httpRequest.headers = headers;
+    httpRequest.headers = AliceParser.parseHeaders(headers: headers);
     String? contentType = 'unknown';
     if (headers.containsKey('Content-Type')) {
-      contentType = headers['Content-Type'] as String?;
+      contentType = headers['Content-Type'];
     }
 
     httpRequest
       ..contentType = contentType
-      ..cookies = request.cookies;
+      ..cookies = request.cookies
+          .map((cookie) => AliceCookie(cookie.name, cookie.value))
+          .toList();
 
     call
       ..request = httpRequest
